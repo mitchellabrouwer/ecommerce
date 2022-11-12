@@ -1,6 +1,7 @@
 import * as localForage from "localforage";
 import Head from "next/head";
 import Image from "next/image";
+import Script from "next/script";
 import { useEffect, useState } from "react";
 import { getProducts } from "../lib/data";
 import prisma from "../lib/prisma";
@@ -22,6 +23,8 @@ export default function Home({ products }) {
 
   return (
     <div>
+      <Script src="https://js.stripe.com/v3/" />
+
       <Head>
         <title>Shop</title>
         <meta name="description" content="Shop" />
@@ -51,6 +54,37 @@ export default function Home({ products }) {
                 </div>
               </div>
             ))}
+
+            <button
+              className="mx-auto bg-black text-white px-3 py-1 my-4 text-xl font-bold justify-center flex"
+              onClick={async () => {
+                const res = await fetch("/api/stripe/session", {
+                  body: JSON.stringify({
+                    cart,
+                  }),
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  method: "POST",
+                });
+
+                const data = await res.json();
+
+                if (data.status === "error") {
+                  return alert(data.message);
+                }
+
+                const sessionId = data.sessionId;
+                const stripePublicKey = data.stripePublicKey;
+
+                const stripe = Stripe(stripePublicKey);
+                const { error } = await stripe.redirectToCheckout({ sessionId });
+
+                setCart([]);
+              }}
+            >
+              Go to checkout
+            </button>
 
             <button
               className="mx-auto bg-black text-white px-3 py-1 my-4 text-sm justify-center flex"
