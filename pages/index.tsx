@@ -1,12 +1,25 @@
+import * as localForage from "localforage";
 import Head from "next/head";
-
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getProducts } from "../lib/data";
 import prisma from "../lib/prisma";
 
 export default function Home({ products }) {
   const [cart, setCart] = useState([]);
+
+  useEffect(() => {
+    localForage.getItem("cart", function (err, value) {
+      if (value) {
+        setCart(value);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    localForage.setItem("cart", cart);
+  }, [cart]);
+
   return (
     <div>
       <Head>
@@ -24,14 +37,27 @@ export default function Home({ products }) {
             {cart.map((item, index) => (
               <div key={index} className="px-4 py-2 border-y border-black flex">
                 <div className="block mt-2">
-                  <Image src="https://picsum.photos/200/200" width={"50"} height={"50"} />
+                  <Image
+                    // src={`/` + item.product.image}
+                    src={"https://picsum.photos/200"}
+                    width={"50"}
+                    height={"50"}
+                    className=""
+                  />
                 </div>
                 <div className="mt-5 pl-4">
                   <span className="font-bold">{item.product.title}</span> - quantity:{" "}
                   {item.quantity}
                 </div>
               </div>
-            ))}{" "}
+            ))}
+
+            <button
+              className="mx-auto bg-black text-white px-3 py-1 my-4 text-sm justify-center flex"
+              onClick={() => setCart([])}
+            >
+              Clear cart
+            </button>
           </div>
         )}
 
@@ -40,9 +66,8 @@ export default function Home({ products }) {
             <div className="mb-4 grid sm:grid-cols-2" key={product.id}>
               <div>
                 <Image
-                  alt="product"
                   // src={`/` + product.image}
-                  src={"https://picsum.photos/200/300"}
+                  src={"https://picsum.photos/200"}
                   width={"600"}
                   height={"600"}
                 />
@@ -52,10 +77,11 @@ export default function Home({ products }) {
                 <h3 className="text-2xl font-extrabold mb-4">${product.price / 100}</h3>
                 <button
                   className="mb-4 mx-auto bg-black text-white px-3 py-1 text-lg"
-                  onClick={(event) => {
+                  onClick={() => {
                     const itemsInCartWithThisId = cart.filter((item) => {
                       return item.product.id === product.id;
                     });
+
                     if (itemsInCartWithThisId.length > 0) {
                       setCart([
                         ...cart.filter((item) => {
@@ -83,7 +109,7 @@ export default function Home({ products }) {
   );
 }
 
-export async function getServerSideProps() {
+export async function getServerSideProps(context) {
   const products = await getProducts(prisma);
 
   return {
