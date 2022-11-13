@@ -19,8 +19,12 @@ export default function Thanks() {
       });
     };
 
-    call();
-  }, []);
+    if (session_id) {
+      call().then(() => {
+        router.push("/thanks");
+      });
+    }
+  }, [session_id]);
 
   return (
     <div>
